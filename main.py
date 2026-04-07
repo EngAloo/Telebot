@@ -15,7 +15,7 @@ if not TOKEN:
     raise ValueError("TOKEN NOT FOUND!")
 
 # ==============================
-# Web Server (حل Render)
+# Web Server (Render fix)
 # ==============================
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -31,22 +31,32 @@ def run_server():
 threading.Thread(target=run_server).start()
 
 # ==============================
-# إعدادات التحميل القوية
+# إعدادات السرعة + الجودة
 # ==============================
 def get_ydl_opts():
     return {
-        'format': 'bestvideo+bestaudio/best',  # أعلى جودة
+        # أولاً نحاول ملف جاهز mp4 (سريع)
+        # وإذا ماكو → أعلى جودة ممكنة
+        'format': 'best[ext=mp4]/bestvideo+bestaudio/best',
+
         'outtmpl': 'video.%(ext)s',
         'quiet': True,
         'nocheckcertificate': True,
         'ignoreerrors': True,
 
+        # تسريع التحميل
+        'noplaylist': True,
+        'concurrent_fragment_downloads': 5,
+
+        # تقليل الدمج قدر الإمكان
+        'merge_output_format': 'mp4',
+
         # تحسين التوافق مع المواقع
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            'User-Agent': 'Mozilla/5.0',
         },
 
-        # تقليل مشاكل الحظر
+        # تجاوز بعض القيود
         'geo_bypass': True,
         'geo_bypass_country': 'US',
     }
@@ -57,26 +67,25 @@ def get_ydl_opts():
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = update.message.text
 
-    await update.message.reply_text("⏬ جاري تحميل الفيديو بأعلى جودة...")
+    await update.message.reply_text("⚡ جاري التحميل بأقصى سرعة وأعلى جودة...")
 
     try:
         ydl_opts = get_ydl_opts()
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
-
             filename = ydl.prepare_filename(info)
 
-        # تأكد من الامتداد
+        # إذا ما لقى الملف
         if not os.path.exists(filename):
             filename = "video.mp4"
 
-        # تحقق من الحجم
         if os.path.exists(filename):
             size = os.path.getsize(filename)
 
+            # إذا كبير
             if size > 50 * 1024 * 1024:
-                await update.message.reply_text("📎 الفيديو كبير، هذا رابط المشاهدة:")
+                await update.message.reply_text("📎 الفيديو كبير، هذا الرابط:")
                 await update.message.reply_text(url)
             else:
                 await update.message.reply_video(video=open(filename, 'rb'))
