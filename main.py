@@ -3,7 +3,8 @@ import yt_dlp
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
-TOKEN = "8729065442:AAFzGjLBYTZs7-yRo4xBDfoMUJd2NVBo-ew"
+import os
+TOKEN = os.getenv("TOKEN")
 
 user_links = {}
 
